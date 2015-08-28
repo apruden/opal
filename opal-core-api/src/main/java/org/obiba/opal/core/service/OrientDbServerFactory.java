@@ -14,4 +14,6 @@ public interface OrientDbServerFactory {
   ODatabaseDocumentTx getDocumentTx();
 
   void setUrl(@NotNull String url);
+
+  String getUrl();
 }

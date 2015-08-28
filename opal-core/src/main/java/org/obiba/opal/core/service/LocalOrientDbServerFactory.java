@@ -1,6 +1,5 @@
 package org.obiba.opal.core.service;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.validation.constraints.NotNull;
 
@@ -9,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import com.orientechnologies.orient.core.db.ODatabaseRecordThreadLocal;
+import com.google.common.base.Throwables;
 import com.orientechnologies.orient.core.db.OPartitionedDatabasePoolFactory;
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.server.OServer;
@@ -51,16 +50,24 @@ public class LocalOrientDbServerFactory implements OrientDbServerFactory {
     this.url = url;
   }
 
-  @PostConstruct
-  public void start() throws Exception {
+  public String getUrl() {
+    return url;
+  }
+
+  public synchronized void init() {
     log.info("Start OrientDB server ({})", url);
 
     System.setProperty("ORIENTDB_HOME", url.replaceFirst("^" + DEFAULT_SCHEME + ":", ""));
     System.setProperty("ORIENTDB_ROOT_PASSWORD", PASSWORD);
 
-    server = new OServer() //
-        .startup(LocalOrientDbServerFactory.class.getResourceAsStream("/orientdb-server-config.xml")) //
-        .activate();
+    try {
+      server = new OServer() //
+          .startup(LocalOrientDbServerFactory.class.getResourceAsStream("/orientdb-server-config.xml")) //
+          .activate();
+    } catch(Exception e) {
+      throw Throwables.propagate(e);
+    }
+
     poolFactory = new OPartitionedDatabasePoolFactory();
 
     ensureDatabaseExists();
@@ -75,6 +82,8 @@ public class LocalOrientDbServerFactory implements OrientDbServerFactory {
   @NotNull
   @Override
   public OServer getServer() {
+    if(server == null && !server.isActive()) init();
+
     return server;
   }
 
@@ -85,12 +94,15 @@ public class LocalOrientDbServerFactory implements OrientDbServerFactory {
 //    String password = opalConfigurationService.getOpalConfiguration().getDatabasePassword();
     log.trace("Open OrientDB connection with username: {}", USERNAME);
 
+    if(poolFactory == null) init();
+
     return poolFactory.get(url, USERNAME, PASSWORD).acquire();
   }
 
   private void ensureDatabaseExists() {
     try(ODatabaseDocumentTx database = new ODatabaseDocumentTx(url)) {
       if(!database.exists()) {
+        log.info("Creating OrientDB database {}", getUrl());
         database.create();
       }
     }

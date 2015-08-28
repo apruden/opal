@@ -90,7 +90,7 @@ public class DefaultDatabaseRegistry implements DatabaseRegistry, DatasourceUpda
   @Override
   @PostConstruct
   public void start() {
-    orientDbService.createUniqueIndex(Database.class);
+    //orientDbService.createUniqueIndex(Database.class);
   }
 
   @Override
