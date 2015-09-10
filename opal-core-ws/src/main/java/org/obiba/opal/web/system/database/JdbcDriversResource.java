@@ -36,17 +36,19 @@ public class JdbcDriversResource {
   @GET
   public Iterable<Database.JdbcDriverDto> getJdbcDrivers() {
     Collection<Database.JdbcDriverDto> drivers = new ArrayList<>();
+
     drivers.add(Database.JdbcDriverDto.newBuilder() //
         .setDriverName("MySQL") //
         .setDriverClass("com.mysql.jdbc.Driver") //
         .setJdbcUrlTemplate("jdbc:mysql://{hostname}:{port}/{databaseName}") //
         .setJdbcUrlExample("jdbc:mysql://localhost:3306/opal").build());
-    // uncomment to activate postgresql support
-//    drivers.add(Database.JdbcDriverDto.newBuilder() //
-//        .setDriverName("PostgreSQL") //
-//        .setDriverClass("org.postgresql.Driver") //
-//        .setJdbcUrlTemplate("jdbc:postgresql://{hostname}:{port}/{databaseName}") //
-//        .setJdbcUrlExample("jdbc:postgresql://localhost:5432/opal").build());
+
+    drivers.add(Database.JdbcDriverDto.newBuilder() //
+        .setDriverName("PostgreSQL") //
+        .setDriverClass("org.postgresql.Driver") //
+        .setJdbcUrlTemplate("jdbc:postgresql://{hostname}:{port}/{databaseName}") //
+        .setJdbcUrlExample("jdbc:postgresql://localhost:5432/opal").build());
+
     return drivers;
   }
 
