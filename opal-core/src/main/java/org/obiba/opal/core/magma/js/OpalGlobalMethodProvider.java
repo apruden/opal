@@ -7,17 +7,20 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import javax.script.ScriptContext;
+import javax.script.ScriptException;
+
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Function;
-import org.mozilla.javascript.Scriptable;
 import org.obiba.magma.js.MagmaContext;
+import org.obiba.magma.js.MagmaContextFactory;
 import org.obiba.magma.js.methods.AbstractGlobalMethodProvider;
 import org.obiba.opal.core.runtime.OpalRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 
 public class OpalGlobalMethodProvider extends AbstractGlobalMethodProvider {
 
@@ -33,39 +36,42 @@ public class OpalGlobalMethodProvider extends AbstractGlobalMethodProvider {
     return GLOBAL_METHODS;
   }
 
-  public static void source(Context ctx, Scriptable thisObj, Object[] args, Function funObj) {
-    String optLevel = System.getProperty("rhino.opt.level");
-    if (optLevel != null) {
-      try {
-        ctx.setOptimizationLevel(Integer.parseInt(optLevel));
-      } catch(Exception e) {}
-    }
+  public static void source(ScriptContext ctx, Object[] args) {
 
     for(Object arg : args) {
       String fileName = Context.toString(arg);
+
       try {
         File file;
+
         if(fileName.startsWith("/")) {
           file = new File(System.getProperty("OPAL_HOME") + File.separator + "fs", fileName);
         } else {
           file = new File(OpalRuntime.MAGMA_JS_EXTENSION, fileName);
         }
+
         if(!file.getCanonicalPath().startsWith(System.getProperty("OPAL_HOME")))
           throw new RuntimeException("Unauthorized javascript library path: " + fileName);
-        MagmaContext context = MagmaContext.asMagmaContext(ctx);
+
         RequireCache cache;
-        if(context.has(RequireCache.class)) {
-          cache = context.peek(RequireCache.class);
+        MagmaContext context = (MagmaContext) ctx;
+
+        if(context.get(RequireCache.class) != null) {
+          cache = (RequireCache) context.get(RequireCache.class);
           if(cache.hasLibrary(file.getAbsolutePath())) return;
         } else {
           cache = new RequireCache();
           context.push(RequireCache.class, cache);
         }
+
         log.debug("Loading file at path: {}", file.getAbsolutePath());
-        FileReader reader = new FileReader(file);
-        context.evaluateReader(thisObj, reader, file.getName(), 1, null);
-        reader.close();
-        cache.addLibrary(file.getAbsolutePath());
+
+        try(FileReader reader = new FileReader(file)) {
+          MagmaContextFactory.getEngine().eval(reader, context);
+          cache.addLibrary(file.getAbsolutePath());
+        } catch (ScriptException e) {
+          throw Throwables.propagate(e);
+        }
       } catch(FileNotFoundException e) {
         throw new RuntimeException("Javascript library not found: " + fileName, e);
       } catch(IOException e) {
