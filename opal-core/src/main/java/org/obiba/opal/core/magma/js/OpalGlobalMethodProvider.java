@@ -1,23 +1,12 @@
 package org.obiba.opal.core.magma.js;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-import javax.script.ScriptContext;
-import javax.script.ScriptException;
-
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import org.mozilla.javascript.Context;
 import org.obiba.magma.js.MagmaContext;
-import org.obiba.magma.js.MagmaContextFactory;
 import org.obiba.magma.js.methods.AbstractGlobalMethodProvider;
-import org.obiba.opal.core.runtime.OpalRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,9 +25,9 @@ public class OpalGlobalMethodProvider extends AbstractGlobalMethodProvider {
     return GLOBAL_METHODS;
   }
 
-  public static void source(ScriptContext ctx, Object[] args) {
+  public static void source(MagmaContext ctx, Object[] args) {
 
-    for(Object arg : args) {
+    /*for(Object arg : args) {
       String fileName = Context.toString(arg);
 
       try {
@@ -77,7 +66,7 @@ public class OpalGlobalMethodProvider extends AbstractGlobalMethodProvider {
       } catch(IOException e) {
         throw new RuntimeException("Javascript library cannot be read: " + fileName, e);
       }
-    }
+    } */
   }
 
   /**
